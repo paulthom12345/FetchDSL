@@ -5,13 +5,11 @@ import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
-import net.devslash.action
+import net.devslash.*
 import net.devslash.data.FileDataSupplier
 import net.devslash.data.ListDataSupplier
-import net.devslash.mustGet
 import net.devslash.outputs.WriteFile
 import net.devslash.pipes.ResettablePipe
-import net.devslash.runHttp
 import java.net.ServerSocket
 import java.nio.file.Files
 import java.util.concurrent.TimeUnit
@@ -59,6 +57,7 @@ fun main() {
       }
       call<Int>(address) {
         data = ListDataSupplier(listOf(1, 2, 3))
+        lock(this::data)
         before {
           action {
             println(data.mustGet<Int>())
@@ -72,4 +71,10 @@ fun main() {
   } finally {
     server.stop(10, 10, TimeUnit.MILLISECONDS)
   }
+}
+
+
+@DSLLockedValue
+class ProtectedDS<T>(val ds: RequestDataSupplier<T>) : RequestDataSupplier<T> {
+  override suspend fun getDataForRequest(): RequestData? = ds.getDataForRequest()
 }

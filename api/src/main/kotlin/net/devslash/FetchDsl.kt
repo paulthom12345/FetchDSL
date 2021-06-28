@@ -3,6 +3,7 @@ package net.devslash
 import net.devslash.err.RetryOnTransitiveError
 import java.time.Duration
 import java.util.*
+import kotlin.reflect.KMutableProperty0
 
 /**
  * Version contains the current version defined in the build.gradle root file.
@@ -43,12 +44,12 @@ enum class HttpMethod {
 @FetchDSL
 @Suppress("MemberVisibilityCanBePrivate")
 open class CallBuilder<T>(private val url: String) {
-  var urlProvider: URLProvider? = null
-  var data: RequestDataSupplier<T>? = null
-  var body: HttpBody? = null
-  var type: HttpMethod = HttpMethod.GET
+  var urlProvider: URLProvider? by LockableValue(null)
+  var data: RequestDataSupplier<T>? by LockableValue(null)
+  var body: HttpBody? by LockableValue(null)
+  var type: HttpMethod by LockableValue(HttpMethod.GET)
   var headers: Map<String, List<Any>> = mapOf()
-  var onError: OnError? = RetryOnTransitiveError()
+  var onError: OnError? by LockableValue(RetryOnTransitiveError())
 
   private var preHooksList = mutableListOf<BeforeHook>()
   private var postHooksList = mutableListOf<AfterHook>()
@@ -63,6 +64,10 @@ open class CallBuilder<T>(private val url: String) {
 
   fun body(block: BodyBuilder.() -> Unit) {
     body = BodyBuilder().apply(block).build()
+  }
+
+  fun inject(x: AcceptCallContext<T>) {
+    this.apply(x.inject())
   }
 
   private fun mapHeaders(map: Map<String, List<Any>>): Map<String, List<HeaderValue>> {
@@ -86,6 +91,14 @@ open class CallBuilder<T>(private val url: String) {
       url, urlProvider, mapHeaders(localHeaders), type, data, body, onError,
       preHooksList, postHooksList
     )
+  }
+
+  fun <T> lock(field: KMutableProperty0<RequestDataSupplier<T>?>) {
+    when (val delegate = field.getDelegate()) {
+      is LockableValue<*, *> -> {
+        delegate.lock()
+      }
+    }
   }
 }
 

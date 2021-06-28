@@ -29,13 +29,18 @@ import java.util.concurrent.atomic.AtomicInteger
  *
  * A checkpointing supplier is also not expected to work
  */
+@DSLLockedValue
 class CheckpointingFileDataSupplier(
   fileName: String, //
   checkpointName: String, //
   private val split: String = " ", //
   private val checkpointPredicate: CheckpointPredicate = defaultCheckpointPredicate
 ) :
-  RequestDataSupplier<List<String>>, FullDataAfterHook, AutoCloseable, OnErrorWithState {
+  RequestDataSupplier<List<String>>,
+  FullDataAfterHook,
+  AutoCloseable,
+  OnErrorWithState,
+  AcceptCallContext<List<String>> {
 
   class CheckpointException(message: String) : RuntimeException(message)
 
@@ -62,13 +67,11 @@ class CheckpointingFileDataSupplier(
     lines = sourceFile.readLines()
   }
 
-  fun inject(callBuilder: CallBuilder<List<String>>) {
-    callBuilder.apply {
-      data = this@CheckpointingFileDataSupplier
-      onError = this@CheckpointingFileDataSupplier
-      after {
-        +this@CheckpointingFileDataSupplier
-      }
+  override fun inject(): CallBuilder<List<String>>.() -> Unit = {
+    data = this@CheckpointingFileDataSupplier
+    onError = this@CheckpointingFileDataSupplier
+    after {
+      +this@CheckpointingFileDataSupplier
     }
   }
 

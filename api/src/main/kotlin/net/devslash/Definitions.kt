@@ -35,7 +35,7 @@ data class Call<T>(
   val afterHooks: List<AfterHook>
 )
 
-interface RequestDataSupplier<T> {
+interface RequestDataSupplier<in T> {
   /**
    * Request data should be a closure that is safe to call on a per-request basis
    */

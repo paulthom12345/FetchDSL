@@ -2,10 +2,7 @@ package net.devslash.data
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
-import net.devslash.Call
-import net.devslash.CallBuilder
-import net.devslash.HttpResponse
-import net.devslash.mustGet
+import net.devslash.*
 import net.devslash.outputs.LogResponse
 import net.devslash.util.basicRequest
 import net.devslash.util.basicResponse
@@ -69,7 +66,7 @@ internal class CheckpointingFileDataSupplierTest {
     val call: Call<List<String>>
     supplier.use {
       call = CallBuilder<List<String>>("http://example.com").apply {
-        it.inject(this)
+        inject(supplier)
         after {
           // Test append, not overwrite
           +LogResponse()
@@ -95,6 +92,12 @@ internal class CheckpointingFileDataSupplierTest {
 
     val rd = supplier.getDataForRequest()!!
     val rd2 = supplier.getDataForRequest()!!
+
+    runHttp {
+      call("T") {
+        inject(supplier)
+      }
+    }
 
     // In this form, 200 is failure
     supplier.accept(basicRequest(), basicResponse(), rd)

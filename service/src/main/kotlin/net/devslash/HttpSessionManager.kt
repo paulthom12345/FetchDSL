@@ -37,7 +37,7 @@ class HttpSessionManager(private val engine: Driver, private val session: Sessio
 
   override fun <T> call(call: Call<T>): Exception? = call(call, DefaultCookieJar())
 
-  override fun <T> call(call: Call<T>, jar: CookieJar): Exception? = runBlocking(Dispatchers.Default) {
+  override fun <T> call(call: Call<T>, jar: CookieJar): Exception? = runBlocking {
     val channel: Channel<Envelope<Contents>> = Channel(session.concurrency * 2)
     launch(Dispatchers.IO) { RequestProducer().produceHttp(this@HttpSessionManager, call, jar, channel) }
 
